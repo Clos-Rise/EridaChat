@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>EridaChat by EridAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --main-bg: linear-gradient(180deg, #17241c 0%, #0b1a14 100%);
+      --panel-bg: #182c25;
+      --bubble-user: #1b3c2b;
+      --bubble-bot: #22392e;
+      --bubble-border: #274638;
+      --input-bg: #15241d;
+      --input-border: #274638;
+      --input-focus: #51e39a;
+      --accent: #51e39a;
+      --accent-dark: #2e604a;
+      --text-main: #e6f5e6;
+      --text-muted: #7fbc8c;
+      --shadow: 0 2px 18px rgba(30,80,40,0.14);
+      --radius: 22px;
+      --radius-bubble: 18px;
+      --header-height: 72px;
+      --input-height: 64px;
+      --msg-max-width: 1100px;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--main-bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      width: 100vw;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* Header */
+    .header {
+      width: 100vw;
+      position: fixed;
+      top: 0; left: 0;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      height: var(--header-height);
+      padding: 0 24px;
+      z-index: 20;
+      background: rgba(18,36,27,0.93);
+      box-shadow: 0 3px 16px #12251b22;
+      border-bottom: 1.5px solid #1b3c2b;
+      backdrop-filter: blur(3px);
+    }
+    .header .logo {
+      width: 48px;
+      height: 48px;
+      background: none;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin-right: 10px;
+    }
+    .header .logo svg {
+      display: block;
+      width: 36px;
+      height: 36px;
+    }
+    .header .title {
+      color: var(--text-muted);
+      font-size: 1.13rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      transition: color 0.3s;
+      min-width: 120px;
+      text-align: center;
+      max-width: 60vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      background: none;
+      border-radius: 12px;
+      padding: 7px 24px;
+      margin: 0 0 0 8px;
+      box-shadow: 0 2px 12px #0b1a1440;
+      border: 1.5px solid transparent;
+      user-select: text;
+      flex: 1;
+    }
+    .header .title.animated {
+      animation: popTitle 0.7s cubic-bezier(.23,1.25,.32,1.05);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    @keyframes popTitle {
+      0% { color: var(--accent); transform: scale(1.15);}
+      100% { color: var(--text-muted); transform: scale(1);}
+    }
+    /* Welcome */
+    .center-content {
+      position: absolute;
+      left: 0; right: 0; top: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      transition: opacity 0.5s;
+      background: none;
+      pointer-events: none;
+      animation: fadeInDown 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    .center-content.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .main-title {
+      font-size: 3.7rem;
+      font-weight: 700;
+      margin-bottom: 0.4em;
+      letter-spacing: -1px;
+      text-align: center;
+      color: var(--text-main);
+      text-shadow: 0 0 24px #51e39a44, 0 2px 24px rgba(30,80,40,0.13);
+      filter: drop-shadow(0 2px 16px #51e39a22);
+      letter-spacing: -2px;
+    }
+    .byline {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-bottom: 2.5em;
+      text-align: center;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      text-shadow: 0 2px 8px #0b1a1444;
+    }
+    .byline .eridai {
+      font-family: monospace;
+      letter-spacing: 0.15em;
+      font-size: 1.08em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-left: 8px;
+      text-shadow: 0 2px 8px #51e39a33;
+    }
+    /* Чат */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100vw;
+      min-height: 100vh;
+      padding-top: calc(var(--header-height) + 18px);
+      padding-bottom: 120px;
+      transition: opacity 0.5s;
+      background: none;
+      z-index: 1;
+      position: relative;
+    }
+    .chat-area.hidden {
+      display: none;
+    }
+    .messages {
+      width: 100%;
+      max-width: var(--msg-max-width);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      min-height: 200px;
+      padding-bottom: 160px;
+      box-sizing: border-box;
+      scroll-behavior: smooth;
+    }
+    .msg-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      width: 100%;
+      animation: fadeInMsg 0.45s;
+    }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot { justify-content: flex-start; }
+    .msg-bubble {
+      max-width: 92%;
+      padding: 22px 28px;
+      border-radius: var(--radius-bubble);
+      font-size: 1.18rem;
+      line-height: 1.6;
+      word-break: break-word;
+      box-shadow: var(--shadow);
+      margin-bottom: 4px;
+      opacity: 0.97;
+      border: 1.5px solid var(--bubble-border);
+      background: var(--bubble-bot);
+      color: var(--text-main);
+      transition: background 0.2s, border 0.2s;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      position: relative;
+    }
+    .msg-row.user .msg-bubble {
+      background: var(--bubble-user);
+      color: var(--text-main);
+      border: 1.5px solid #1b3c2b;
+      align-self: flex-end;
+    }
+    .msg-row.bot .msg-bubble {
+      background: var(--bubble-bot);
+      color: var(--text-main);
+      border: 1.5px solid var(--bubble-border);
+      align-self: flex-start;
+    }
+    .msg-bubble::after {
+      content: '';
+      display: block;
+      height: 0;
+      clear: both;
+    }
+    .msg-avatar {
+      flex-shrink: 0;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0b1a14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.13rem;
+      margin-top: 2px;
+      user-select: none;
+      border: 2.5px solid #20372b;
+      box-shadow: 0 2px 8px #51e39a33;
+      transition: box-shadow 0.2s;
+    }
+    .msg-row.user .msg-avatar {
+      background: var(--accent);
+      color: #0b1a14;
+      margin-left: 8px;
+      margin-right: 0;
+    }
+    .msg-row.bot .msg-avatar {
+      background: #22392e;
+      color: var(--accent);
+      margin-right: 8px;
+      margin-left: 0;
+    }
+    .msg-avatar:hover {
+      box-shadow: 0 4px 16px #51e39a66;
+    }
+    @keyframes fadeInMsg {
+      from { opacity: 0; transform: translateY(20px);}
+      to { opacity: 0.97; transform: translateY(0);}
+    }
+    /* Input */
+    .chat-input-bar {
+      width: 100%;
+      max-width: var(--msg-max-width);
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px 0 #51e39a22, 0 2px 20px rgba(0,0,0,0.14);
+      padding: 10px 18px;
+      border: 1.5px solid var(--input-border);
+      z-index: 30;
+      animation: fadeInUp 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+      box-sizing: border-box;
+      height: var(--input-height);
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .chat-input-bar:focus-within {
+      border: 1.5px solid var(--input-focus);
+      box-shadow: 0 4px 24px #51e39a44;
+    }
+    .chat-input-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1.15rem;
+      padding: 14px 10px;
+      background: transparent;
+      color: var(--text-main);
+      font-family: inherit;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      transition: color 0.2s;
+    }
+    .chat-input-bar input::placeholder {
+      color: var(--text-muted);
+      font-size: 1.08rem;
+      letter-spacing: 0.01em;
+      opacity: 0.85;
+    }
+    .chat-input-bar button {
+      background: linear-gradient(135deg, var(--accent) 60%, var(--accent-dark) 100%);
+      color: #0b1a14;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-left: 10px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px #51e39a33;
+    }
+    .chat-input-bar button:hover {
+      background: linear-gradient(135deg, var(--accent-dark) 60%, var(--accent) 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px #51e39a55;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0);}
+      40% { transform: translateY(-8px);}
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      background: #1b3c2b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #274638;
+      border-radius: 8px;
+    }
+    /* Адаптив */
+    @media (max-width: 1300px) {
+      .messages, .chat-input-bar { max-width: 99vw; }
+      .header .title { max-width: 70vw; }
+    }
+    @media (max-width: 900px) {
+      .main-title { font-size: 2.2rem;}
+      .header { padding: 0 8px; }
+      .header .title { padding: 6px 6px; }
+      .msg-bubble { font-size: 1rem; padding: 13px 10px;}
+      .chat-input-bar { padding: 5px 4px; }
+    }
+    @media (max-width: 600px) {
+      .header { height: 56px; }
+      .header .logo { width: 36px; height: 36px;}
+      .header .logo svg { width: 28px; height: 28px;}
+      .header .title { font-size: 1rem; padding: 4px 2vw; }
+      .chat-area { padding-top: 62px; }
+      .messages, .chat-input-bar { max-width: 99vw; }
+      .chat-input-bar { height: 48px; }
+      .msg-bubble { font-size: 0.98rem; padding: 9px 6px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo" title="EridAI">
+      <!-- SVG иконка нейросети -->
+      <svg width="36" height="36" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="13" fill="#51e39a" stroke="#20372b" stroke-width="2"/>
+        <path d="M10 18C10 19.6569 11.3431 21 13 21H15C16.6569 21 18 19.6569 18 18V10C18 8.34315 16.6569 7 15 7H13C11.3431 7 10 8.34315 10 10V18Z" stroke="#0b1a14" stroke-width="1.7"/>
+        <circle cx="14" cy="12" r="1.5" fill="#0b1a14"/>
+      </svg>
+    </div>
+    <div class="title" id="chatTitle">Untitled</div>
+  </div>
+  <div class="center-content" id="welcomeScreen">
+    <div class="main-title">EridaChat</div>
+    <div class="byline">
+      by <span class="eridai">EridAI</span>
+    </div>
+  </div>
+  <div class="chat-area hidden" id="chatArea">
+    <div class="messages" id="messages"></div>
+  </div>
+  <form class="chat-input-bar" id="chatForm" autocomplete="off">
+    <input type="text" id="userInput" placeholder="Message EridaChat..." required autocomplete="off">
+    <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+  </form>
+  <script>
+    // HF OpenAI API параметры
+    const HF_TOKEN = "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";
+    const HF_MODEL = "deepseek/deepseek-prover-v2-671b";
+    const HF_API_URL = "https://router.huggingface.co/novita/v3/openai/chat/completions";
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const chatArea = document.getElementById('chatArea');
+    const chatForm = document.getElementById('chatForm');
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('userInput');
+    const chatTitle = document.getElementById('chatTitle');
+
+    let chatHistory = [];
+
+    chatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+        welcomeScreen.classList.add('hidden');
+        chatArea.classList.remove('hidden');
+      }
+
+      // Генерация имени чата
+      if (chatTitle.textContent === "Untitled") {
+        const newTitle = generateChatTitle(text);
+        chatTitle.textContent = newTitle;
+        chatTitle.classList.add('animated');
+        setTimeout(() => chatTitle.classList.remove('animated'), 800);
+      }
+
+      addMessage(text, 'user');
+      chatHistory.push({ role: "user", content: text });
+      userInput.value = '';
+      await addMessageStreaming(chatHistory);
+    });
+
+    function generateChatTitle(text) {
+      let words = text.trim().split(/\s+/).slice(0, 6);
+      let title = words.join(' ');
+      if (text.trim().split(/\s+/).length > 6) title += '…';
+      return title.charAt(0).toUpperCase() + title.slice(1);
+    }
+
+    function addMessage(text, who) {
+      const row = document.createElement('div');
+      row.className = 'msg-row ' + who;
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = who === 'user' ? 'You' : 'EI';
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = text;
+      if (who === 'user') {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+      } else {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      }
+      messagesDiv.appendChild(row);
+      setTimeout(()=>{ messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 20);
+    }
+
+    // Потоковая генерация через fetch + SSE
+    async function addMessageStreaming(history) {
+      const row = document.createElement('div');
+      row.className = 'msg-row bot';
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = 'EI';
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.innerHTML = `<span style="color:#51e39a;">Thinking
+        <span style="display:inline-block;width:6px;height:6px;background:#51e39a;border-radius:50%;margin:0 1.5px;animation:bounce 1.2s infinite both;"></span>
+        <span style="display:inline-block;width:6px;height:6px;background:#51e39a;border-radius:50%;margin:0 1.5px;animation:bounce 1.2s 0.2s infinite both;"></span>
+        <span style="display:inline-block;width:6px;height:6px;background:#51e39a;border-radius:50%;margin:0 1.5px;animation:bounce 1.2s 0.4s infinite both;"></span>
+      </span>`;
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      messagesDiv.appendChild(row);
+      setTimeout(()=>{ messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 20);
+
+      try {
+        let out = "";
+        const response = await fetch(HF_API_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${HF_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: HF_MODEL,
+            messages: history,
+            stream: true
+          })
+        });
+        if (!response.body) throw new Error("No response body");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // SSE: разбиваем по \n\n
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+          for (const part of parts) {
+            if (part.startsWith("data: ")) {
+              const data = part.slice(6).trim();
+              if (data === "[DONE]") break;
+              try {
+                const chunk = JSON.parse(data);
+                const delta = chunk.choices?.[0]?.delta?.content || "";
+                out += delta;
+                bubble.textContent = out;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+              } catch (e) {}
+            }
+          }
+        }
+        chatHistory.push({ role: "assistant", content: out });
+      } catch (e) {
+        bubble.textContent = "Ошибка генерации: " + e.message;
+      }
+    }
+
+    userInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && e.shiftKey) {
+        e.stopPropagation();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        chatForm.requestSubmit();
+      }
+    });
+  </script>
+</body>
+</html>
