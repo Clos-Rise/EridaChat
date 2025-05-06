@@ -520,7 +520,7 @@
         const response = await fetch(HF_API_URL, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer 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`,
+            "Authorization": `Bearer ${HF_TOKEN}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
